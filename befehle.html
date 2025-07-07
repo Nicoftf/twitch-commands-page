@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CandeCate Bot - Befehle</title>
+    <style>
+        /* Google Font für ein modernes Design */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary-color: #9b59b6; /* Haupt-Lila */
+            --primary-color-hover: #8e44ad; /* Dunkleres Lila für Hover-Effekte */
+            --background-color: #1a1a2e; /* Dunkler Marineblau-Hintergrund */
+            --card-background: #16213e; /* Etwas helleres Blau für die Karten */
+            --text-color: #e0e0e0;      /* Helles Grau für Text */
+            --header-color: #ffffff;     /* Weiß für Überschriften */
+            --border-color: #2a3a5e;    /* Randfarbe */
+            --shadow-color: rgba(155, 89, 182, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            overflow: hidden;
+            padding: 0 2rem;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: var(--header-color);
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .category-title {
+            color: var(--primary-color);
+            font-size: 2rem;
+            font-weight: 600;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1rem;
+        }
+
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .command-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .command-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(155, 89, 182, 0.2);
+        }
+
+        .command-card .name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--header-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .command-card .name span.prefix {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        .command-card .aliases {
+            font-size: 0.8rem;
+            font-style: italic;
+            color: #aaa;
+            margin-bottom: 1rem;
+        }
+
+        .command-card .description {
+            font-size: 0.95rem;
+            color: var(--text-color);
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        
+        .command-card .mod-only {
+            display: inline-block;
+            background-color: var(--primary-color-hover);
+            color: white;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border-radius: 5px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            color: #777;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>CandeCate Bot</h1>
+            <p>Alle verfügbaren Twitch-Chat-Befehle</p>
+        </header>
+
+        <main id="commands-container">
+            <p style="text-align: center; font-size: 1.2rem;">Lade Befehle...</p>
+        </main>
+        
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const apiUrl = '/commands';
+
+            const container = document.getElementById('commands-container');
+
+            
+            fetch(apiUrl)
+                .then(response => {
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP-Fehler! Status: ${response.status}. Ist der command_server.py gestartet?`);
+                    }
+                    return response.json(); 
+                })
+                .then(allCommands => {
+                    
+                    container.innerHTML = ''; 
+
+                    
+                    for (const category in allCommands) {
+                        const categoryTitle = document.createElement('h2');
+                        categoryTitle.className = 'category-title';
+                        categoryTitle.textContent = category;
+                        container.appendChild(categoryTitle);
+
+                        const grid = document.createElement('div');
+                        grid.className = 'commands-grid';
+                        
+                        allCommands[category].forEach(cmd => {
+                            const card = document.createElement('div');
+                            card.className = 'command-card';
+
+                            let aliasesHTML = '';
+                            if (cmd.aliases && cmd.aliases.length > 0) {
+                                aliasesHTML = `<div class="aliases">Aliase: !${cmd.aliases.join(', !')}</div>`;
+                            }
+                            
+                            let modTagHTML = '';
+                            if (cmd.mod) {
+                                modTagHTML = '<span class="mod-only">Mod</span>';
+                            }
+
+                            card.innerHTML = `
+                                <div class="name">
+                                    <span class="prefix">!</span>${cmd.name}
+                                    ${modTagHTML}
+                                </div>
+                                ${aliasesHTML}
+                                <div class="description">${cmd.description || 'Keine Beschreibung.'}</div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                        
+                        container.appendChild(grid);
+                    }
+                })
+                .catch(error => {
+                    
+                    console.error('Fehler beim Abrufen der Befehle:', error);
+                    container.innerHTML = `<p style="text-align: center; color: #ff6b6b; font-size: 1.2rem;">Konnte die Befehle nicht laden. <br>Stelle sicher, dass das Python-Skript 'command_server.py' läuft.<br><br><small>${error.message}</small></p>`;
+                });
+        });
+    </script>
+</body>
+</html>
