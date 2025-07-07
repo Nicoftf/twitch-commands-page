@@ -44,7 +44,7 @@ FIXED_COMMANDS = {
         {"name": "youtube", "description": "Link zum YouTube-Kanal.", "aliases": ["yt"]}
     ],
     "BonbonTaler (Währung)": [
-        {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an.",  "aliases": ["taler", "bt", "balance", "konto"]},
+        {"name": "bonbons", "description": "Zeigt deinen Kontostand an BonbonTalern.",  "aliases": ["taler", "bt", "balance", "konto"]},
         {"name": "gamble", "description": "Setze deine BonbonTaler bei einem Münzwurf."}
     ],
     "Song-Befehle": [
