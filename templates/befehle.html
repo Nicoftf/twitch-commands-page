@@ -147,56 +147,57 @@
     </div>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Ersetze diese URL mit deiner tatsächlichen Render-URL
-        const apiUrl = "https://candecate-bot-befehle.onrender.com/commands";
-        const commandsContainer = document.getElementById("commands-container");
+    document.addEventListener('DOMContentLoaded', () => {
+        const apiUrl = '/commands'; // Relative URL ist am besten
+        const container = document.getElementById('commands-container');
 
         fetch(apiUrl)
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Netzwerkantwort war nicht ok.");
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // Prüfen, ob überhaupt Befehle da sind
-            if (Object.keys(data).length === 0) {
-              commandsContainer.innerHTML =
-                "<p>Aktuell sind keine Befehle in der Datenbank gespeichert.</p>";
-              return;
-            }
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(allCommands => {
+                container.innerHTML = ''; // Vorherige Inhalte leeren
 
-            // Alte Inhalte leeren
-            commandsContainer.innerHTML = "";
+                if (Object.keys(allCommands).length === 0) {
+                    container.innerHTML = '<p style="text-align: center; font-size: 1.2rem;">Keine Befehle in der Datenbank gefunden.</p>';
+                    return;
+                }
 
-            // NEUE LOGIK: Direkt über das Objekt iterieren
-            for (const commandName in data) {
-              const commandData = data[commandName];
+                // Erstelle das Grid-Layout, das im CSS definiert ist
+                const grid = document.createElement('div');
+                grid.className = 'commands-grid';
 
-              const commandElement = document.createElement("div");
-              commandElement.classList.add("command");
+                // Iteriere über die Befehle und baue die Karten wieder auf
+                for (const commandName in allCommands) {
+                    const commandData = allCommands[commandName];
 
-              const nameElement = document.createElement("h3");
-              nameElement.textContent = commandName;
+                    // Erstelle die Karte
+                    const card = document.createElement('div');
+                    card.className = 'command-card';
 
-              const responseElement = document.createElement("p");
-              responseElement.textContent = commandData.response;
+                    // Befülle die Karte mit der originalen HTML-Struktur
+                    card.innerHTML = `
+                        <div class="name">
+                            <span class="prefix"></span>${commandName.substring(1)}
+                        </div>
+                        <div class="description">${commandData.response || 'Keine Beschreibung.'}</div>
+                    `;
 
-              commandElement.appendChild(nameElement);
-              commandElement.appendChild(responseElement);
-              commandsContainer.appendChild(commandElement);
-            }
-          })
-          .catch((error) => {
-            console.error("Fehler beim Laden der Befehle:", error);
-            commandsContainer.innerHTML = `
-                <h2>Fehler</h2>
-                <p>Konnte die Befehle nicht vom Server laden.</p>
-                <p>Fehlermeldung: ${error.message}</p>
-            `;
-          });
-      });
-    </script>
+                    // Füge die fertige Karte zum Grid hinzu
+                    grid.appendChild(card);
+                }
+
+                // Füge das fertige Grid zur Seite hinzu
+                container.appendChild(grid);
+            })
+            .catch(error => {
+                console.error('Fehler beim Abrufen der Befehle:', error);
+                container.innerHTML = `<p style="text-align: center; color: #ff6b6b; font-size: 1.2rem;">Konnte die Befehle nicht laden. <br><small>${error.message}</small></p>`;
+            });
+    });
+</script>
   </body>
 </html>
