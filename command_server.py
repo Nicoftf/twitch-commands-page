@@ -33,18 +33,38 @@ FIXED_COMMANDS = {
         {"name": "smashorpass", "description": "Link zum Erstellen eines 'Smash or Pass'-Sets."},
         {"name": "boosted", "description": "Zählt, wie oft CandeCate als 'boosted' bezeichnet wurde."},
         {"name": "energy", "description": "Zählt die getrunkenen Energy-Dosen im Stream."},
-        {"name": "wp", "description": "Zählt, wie oft CandeCates 'Insane' Plays gelobt wurden."},
-        # Füge hier weitere allgemeine Befehle ein...
+        {"name": "wp", "description": "Zählt, wie oft CandeCates 'Insane' Plays gelobt wurden."}
+    ],
+    "Soziale Netzwerke": [
+        {"name": "socials", "description": "Zeigt den Linktree mit allen wichtigen Links."},
+        {"name": "twitter", "description": "Link zum Twitter/X-Profil.", "aliases": ["x"]},
+        {"name": "discord", "description": "Einladungslink zum Discord-Server.", "aliases": ["dc"]},
+        {"name": "instagram", "description": "Link zum Instagram-Profil.", "aliases": ["insta"]},
+        {"name": "tiktok", "description": "Link zum TikTok-Profil."},
+        {"name": "youtube", "description": "Link zum YouTube-Kanal.", "aliases": ["yt"]}
+    ],
+    "BonbonTaler (Währung)": [
+        {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an.",  "aliases": ["taler", "bt", "balance", "konto"]},
+        {"name": "gamble", "description": "Setze deine BonbonTaler bei einem Münzwurf."}
     ],
     "Song-Befehle": [
-        {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an."},
-        {"name": "skip", "description": "Startet eine Abstimmung, um den aktuellen Song zu überspringen.", "mod": True},
-        # ...
+        {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an."}
+    ],
+    "Stream-Informationen": [
+        {"name": "uptime", "description": "Zeigt, wie lange der Stream bereits live ist."},
+        {"name": "title", "description": "Zeigt den aktuellen Titel des Streams."},
+        {"name": "game", "description": "Zeigt das aktuell gestreamte Spiel bzw. die Kategorie."},
+        {"name": "followage", "description": "Prüft, wie lange du oder ein anderer Nutzer dem Kanal schon folgt."},
+        {"name": "watchtime", "description": "Zeigt deine angesammelte Zuschauzeit im Kanal an."}
     ],
     "Moderation": [
-        {"name": "addcommand", "description": "Fügt einen neuen Befehl hinzu.", "mod": True, "aliases": ["new"]},
-        {"name": "editcommand", "description": "Bearbeitet einen Befehl.", "mod": True, "aliases": ["edit"]},
-        {"name": "delcommand", "description": "Löscht einen Befehl.", "mod": True, "aliases": ["del"]},
+        {"name": "new", "description": "Fügt einen neuen Befehl hinzu.", "mod": True},
+        {"name": "edit", "description": "Bearbeitet einen Befehl.", "mod": True},
+        {"name": "del", "description": "Löscht einen Befehl.", "mod": True},
+        {"name": "addrandommsg", "description": "Fügt eine neue zeitgesteuerte Nachricht hinzu.", "mod": True},
+        {"name": "delrandommsg ", "description": "Löscht eine zeitgesteuerte Nachricht per Index.", "mod": True},
+        {"name": "listrandommsgs", "description": "Listet alle zeitgesteuerten Nachrichten auf.", "mod": True},
+        {"name": "shoutout", "description": "Gibt einem anderen Streamer einen Shoutout.", "mod": True, "aliases": ["so"]},
     ]
 }
 
