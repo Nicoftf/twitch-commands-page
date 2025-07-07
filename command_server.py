@@ -86,6 +86,30 @@ def delete_command_api(command_name):
         return jsonify({"success": True, "command_deleted": command_name}), 200
     else:
         return jsonify({"error": "Command not found"}), 404
+    
+@app.route('/api/commands/<path:command_name>', methods=['PUT'])
+def edit_command_api(command_name):
+    """API-Endpunkt, um einen bestehenden Befehl zu bearbeiten."""
+    if request.headers.get('Authorization') != f'Bearer {API_KEY}':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if not command_name.startswith('!'):
+        command_name = '!' + command_name
+
+    command_to_edit = Command.query.filter_by(name=command_name).first()
+
+    if command_to_edit:
+        data = request.json
+        new_response = data.get('response')
+
+        if not new_response:
+            return jsonify({"error": "Missing new response"}), 400
+
+        command_to_edit.response = new_response
+        db.session.commit()
+        return jsonify({"success": True, "command_edited": command_name}), 200
+    else:
+        return jsonify({"error": "Command not found"}), 404
 
 # Diese Funktion sorgt dafür, dass die Tabelle "command" erstellt wird,
 # wenn die App zum ersten Mal startet.
