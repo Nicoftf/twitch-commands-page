@@ -1,6 +1,10 @@
 import json
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, render_template, request
 from flask_cors import CORS
+import os
+
+
+API_KEY = os.environ.get('COMMANDS_API_KEY')
 
 # --- Konfiguration ---
 STATIC_COMMANDS = {
@@ -84,6 +88,48 @@ def get_commands():
         all_commands["Benutzerdefinierte Befehle"] = custom_commands
     
     return jsonify(all_commands)
+
+
+def save_commands_to_file(commands):
+    """Speichert das Befehls-Wörterbuch in die JSON-Datei."""
+    with open('commands.json', 'w', encoding='utf-8') as f:
+        json.dump(commands, f, indent=4)
+
+@app.route('/api/commands', methods=['POST'])
+def add_command_api():
+    """API-Endpunkt, um einen neuen Befehl hinzuzufügen."""
+    # Überprüfen, ob der richtige API-Schlüssel gesendet wurde
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or auth_header != f'Bearer {API_KEY}':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    command_name = data.get('name')
+    command_response = data.get('response')
+
+    if not command_name or not command_response:
+        return jsonify({"error": "Missing name or response"}), 400
+
+    custom_commands = load_custom_commands()
+    custom_commands[command_name] = {"response": command_response}
+    save_commands_to_file(custom_commands)
+
+    return jsonify({"success": True, "command": command_name}), 201
+
+@app.route('/api/commands/<command_name>', methods=['DELETE'])
+def delete_command_api(command_name):
+    """API-Endpunkt, um einen Befehl zu löschen."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or auth_header != f'Bearer {API_KEY}':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    custom_commands = load_custom_commands()
+    if command_name in custom_commands:
+        del custom_commands[command_name]
+        save_commands_to_file(custom_commands)
+        return jsonify({"success": True, "command_deleted": command_name}), 200
+    else:
+        return jsonify({"error": "Command not found"}), 404
 
 if __name__ == '__main__':
     
