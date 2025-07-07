@@ -15,18 +15,38 @@ API_KEY = os.environ.get('COMMANDS_API_KEY')
 # Initialisiere die Datenbank-Verbindung
 db = SQLAlchemy(app)
 
-# --- DATENBANK-MODELL (die Struktur der Tabelle) ---
-# So sieht ein Eintrag in unserer Datenbanktabelle aus.
 class Command(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
     response = db.Column(db.String(500), nullable=False)
 
-    def to_dict(self):
-        """Wandelt das Command-Objekt in ein Dictionary um."""
-        return {self.name: {"response": self.response}}
-
-# --- ROUTEN FÜR DIE WEBSEITE ---
+# --- ZENTRALE DEFINITION DER FESTEN BEFEHLE ---
+# Dies ist jetzt die einzige Quelle der Wahrheit für feste Befehle.
+# Füge hier weitere feste Befehle oder Kategorien hinzu.
+FIXED_COMMANDS = {
+    "Allgemein": [
+        {"name": "hallo", "description": "Begrüßt den Benutzer freundlich."},
+        {"name": "info", "description": "Gibt eine kurze Info über den Bot aus."},
+        {"name": "commands", "description": "Listet alle verfügbaren Befehle im Chat auf."},
+        {"name": "lurk", "description": "Lass den Chat wissen, dass du im Hintergrund zuschaust."},
+        {"name": "rank", "description": "Zeigt den aktuellen Valorant-Rang von CandeCate an."},
+        {"name": "smashorpass", "description": "Link zum Erstellen eines 'Smash or Pass'-Sets."},
+        {"name": "boosted", "description": "Zählt, wie oft CandeCate als 'boosted' bezeichnet wurde."},
+        {"name": "energy", "description": "Zählt die getrunkenen Energy-Dosen im Stream."},
+        {"name": "wp", "description": "Zählt, wie oft CandeCates 'Insane' Plays gelobt wurden."},
+        # Füge hier weitere allgemeine Befehle ein...
+    ],
+    "Song-Befehle": [
+        {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an."},
+        {"name": "skip", "description": "Startet eine Abstimmung, um den aktuellen Song zu überspringen.", "mod": True},
+        # ...
+    ],
+    "Moderation": [
+        {"name": "addcommand", "description": "Fügt einen neuen Befehl hinzu.", "mod": True, "aliases": ["new"]},
+        {"name": "editcommand", "description": "Bearbeitet einen Befehl.", "mod": True, "aliases": ["edit"]},
+        {"name": "delcommand", "description": "Löscht einen Befehl.", "mod": True, "aliases": ["del"]},
+    ]
+}
 
 @app.route('/')
 def index():
@@ -35,15 +55,29 @@ def index():
 
 @app.route('/commands')
 def get_commands():
-    """Liest alle Befehle aus der Datenbank und gibt sie als JSON zurück."""
-    commands = Command.query.all()
-    # Wandle die Liste von Objekten in das gewohnte Dictionary-Format um
-    command_dict = {}
-    for cmd in commands:
-        command_dict.update(cmd.to_dict())
-    return jsonify(command_dict)
-
-# --- ROUTEN FÜR DIE API (den Bot) ---
+    """Kombiniert feste Befehle mit denen aus der DB und liefert sie kategorisiert zurück."""
+    
+    # Beginne mit einer Kopie der festen Befehle
+    categorized_commands = {k: list(v) for k, v in FIXED_COMMANDS.items()}
+    
+    # Hole alle benutzerdefinierten Befehle aus der Datenbank
+    custom_commands_from_db = Command.query.all()
+    
+    if custom_commands_from_db:
+        # Erstelle die Kategorie "Benutzerdefiniert", falls sie noch nicht existiert
+        if "Benutzerdefiniert" not in categorized_commands:
+            categorized_commands["Benutzerdefiniert"] = []
+            
+        # Füge jeden DB-Befehl zur Kategorie "Benutzerdefiniert" hinzu
+        for cmd in custom_commands_from_db:
+            categorized_commands["Benutzerdefiniert"].append({
+                "name": cmd.name.lstrip('!'), # Entferne das '!' für die Anzeige
+                "description": cmd.response,
+                "mod": False, # Benutzerdefinierte Befehle sind standardmäßig nicht als Mod-Only markiert
+                "aliases": []
+            })
+            
+    return jsonify(categorized_commands)
 
 @app.route('/api/commands', methods=['POST'])
 def add_command_api():
