@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CandeCate Bot - Befehle</title>
     <style>
-        /* Google Font für ein modernes Design */
+        /* Google Font */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
         :root {
@@ -144,7 +144,7 @@
             font-size: 0.9rem;
         }
 
-        /* --- RESPONSIVE DESIGN ANPASSUNGEN --- */
+        /* --- RESPONSIVE DESIGN --- */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -155,7 +155,7 @@
             }
 
             .header h1 {
-                font-size: 2.2rem; /* Kleinere Überschrift für mobile Geräte */
+                font-size: 2.2rem; 
             }
 
             .header p {
@@ -163,18 +163,18 @@
             }
 
             .category-title {
-                font-size: 1.6rem; /* Kleinere Kategorie-Titel */
+                font-size: 1.6rem; 
             }
 
             .commands-grid {
-                /* Stellt sicher, dass auf kleinen Bildschirmen nur eine Spalte angezeigt wird */
+                
                 grid-template-columns: 1fr; 
             }
         }
 
         @media (max-width: 480px) {
             .command-card {
-                padding: 1rem; /* Weniger Innenabstand auf sehr kleinen Geräten */
+                padding: 1rem;
             }
             .header {
                 padding-bottom: 1.5rem;
@@ -288,7 +288,7 @@
                     console.error('Fehler beim Abrufen der Befehle:', error);
                     container.innerHTML = `<p style="text-align: center; color: #ff6b6b; font-size: 1.2rem;">Konnte die Befehle nicht laden. <br>Stelle sicher, dass das Python-Skript 'command_server.py' läuft.<br><br><small>${error.message}</small></p>`;
                 });
-        });
+        }); 
     </script>
 </body>
 </html>

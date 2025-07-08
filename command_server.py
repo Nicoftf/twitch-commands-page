@@ -54,7 +54,8 @@ FIXED_COMMANDS = {
     ],
     "BonbonTaler (Währung)": [
         {"name": "bonbons", "description": "Zeigt deinen Kontostand an BonbonTalern.",  "aliases": ["taler", "bt", "balance", "konto"]},
-        {"name": "gamble", "description": "Setze deine BonbonTaler bei einem Münzwurf."}
+        {"name": "gamble", "description": "Setze deine BonbonTaler bei einem Münzwurf."},
+        {"name": "bestenliste", "description": "Zeigt die Top 5 der Benutzer mit den meisten BonbonTalern an."}
     ],
     "Song-Befehle": [
         {"name": "song", "description": "Zeigt den aktuell auf Spotify laufenden Song an."}
