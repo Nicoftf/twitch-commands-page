@@ -143,6 +143,44 @@
             color: #777;
             font-size: 0.9rem;
         }
+
+        /* --- RESPONSIVE DESIGN ANPASSUNGEN --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .header h1 {
+                font-size: 2.2rem; /* Kleinere Überschrift für mobile Geräte */
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .category-title {
+                font-size: 1.6rem; /* Kleinere Kategorie-Titel */
+            }
+
+            .commands-grid {
+                /* Stellt sicher, dass auf kleinen Bildschirmen nur eine Spalte angezeigt wird */
+                grid-template-columns: 1fr; 
+            }
+        }
+
+        @media (max-width: 480px) {
+            .command-card {
+                padding: 1rem; /* Weniger Innenabstand auf sehr kleinen Geräten */
+            }
+            .header {
+                padding-bottom: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -172,7 +210,6 @@
             function replaceEmotes(text) {
                 let processedText = text;
                 sevenTvEmotes.forEach((url, name) => {
-                    // KORREKTUR: 'gi' für globale (g) und case-insensitive (i) Suche hinzugefügt.
                     const emoteRegex = new RegExp(`\\b${name}\\b`, 'gi');
                     processedText = processedText.replace(emoteRegex, `<img src="${url}" alt="${name}" title="${name}" style="height: 1.5em; vertical-align: middle; margin: -0.25em 0;">`);
                 });
