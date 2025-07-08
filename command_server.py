@@ -6,11 +6,21 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# --- DATENBANK-KONFIGURATION ---
-# Lade die Datenbank-URL und den API-Schlüssel aus den Umgebungsvariablen
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Spart Ressourcen
-API_KEY = os.environ.get('COMMANDS_API_KEY')
+# --- DATENBANK-KONFIGURATION (FUNKTIONIERT LOKAL & AUF DEM SERVER) ---
+# Versucht, die DATABASE_URL von der Umgebung (z.B. Render) zu bekommen.
+database_url = os.environ.get('DATABASE_URL')
+# Wenn die Variable NICHT gefunden wird (z.B. lokal), wird eine lokale SQLite-DB genutzt.
+if not database_url:
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'commands.db')
+    database_url = f'sqlite:///{db_path}'
+    print(f"INFO: DATABASE_URL nicht gesetzt. Fallback auf lokale DB: {database_url}")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Setzt einen Standard-API-Key für lokales Testen, falls keiner gesetzt ist.
+API_KEY = os.environ.get('COMMANDS_API_KEY', 'ein-geheimer-test-key')
+
 
 # Initialisiere die Datenbank-Verbindung
 db = SQLAlchemy(app)
@@ -21,8 +31,6 @@ class Command(db.Model):
     response = db.Column(db.String(500), nullable=False)
 
 # --- ZENTRALE DEFINITION DER FESTEN BEFEHLE ---
-# Dies ist jetzt die einzige Quelle der Wahrheit für feste Befehle.
-# Füge hier weitere feste Befehle oder Kategorien hinzu.
 FIXED_COMMANDS = {
     "Allgemein": [
         {"name": "hallo", "description": "Begrüßt den Benutzer freundlich."},
@@ -76,27 +84,26 @@ def index():
 @app.route('/commands')
 def get_commands():
     """Kombiniert feste Befehle mit denen aus der DB und liefert sie kategorisiert zurück."""
-    
-    # Beginne mit einer Kopie der festen Befehle
+
     categorized_commands = {k: list(v) for k, v in FIXED_COMMANDS.items()}
-    
-    # Hole alle benutzerdefinierten Befehle aus der Datenbank
     custom_commands_from_db = Command.query.all()
-    
+
     if custom_commands_from_db:
-        # Erstelle die Kategorie "Benutzerdefiniert", falls sie noch nicht existiert
         if "Benutzerdefiniert" not in categorized_commands:
             categorized_commands["Benutzerdefiniert"] = []
-            
-        # Füge jeden DB-Befehl zur Kategorie "Benutzerdefiniert" hinzu
         for cmd in custom_commands_from_db:
             categorized_commands["Benutzerdefiniert"].append({
-                "name": cmd.name.lstrip('!'), # Entferne das '!' für die Anzeige
+                "name": cmd.name.lstrip('!'),
                 "description": cmd.response,
-                "mod": False, # Benutzerdefinierte Befehle sind standardmäßig nicht als Mod-Only markiert
+                "mod": False,
                 "aliases": []
             })
-            
+
+    # Verschiebe Moderations-Befehle ans Ende
+    if "Moderation" in categorized_commands:
+        mod_commands = categorized_commands.pop("Moderation")
+        categorized_commands["Moderation"] = mod_commands
+
     return jsonify(categorized_commands)
 
 @app.route('/api/commands', methods=['POST'])
@@ -112,11 +119,9 @@ def add_command_api():
     if not command_name or not command_response:
         return jsonify({"error": "Missing name or response"}), 400
 
-    # Prüfen, ob der Befehl schon existiert
     if Command.query.filter_by(name=command_name).first():
         return jsonify({"error": "Command already exists"}), 409
 
-    # Neuen Befehl erstellen und in der Datenbank speichern
     new_command = Command(name=command_name, response=command_response)
     db.session.add(new_command)
     db.session.commit()
@@ -140,7 +145,7 @@ def delete_command_api(command_name):
         return jsonify({"success": True, "command_deleted": command_name}), 200
     else:
         return jsonify({"error": "Command not found"}), 404
-    
+
 @app.route('/api/commands/<path:command_name>', methods=['PUT'])
 def edit_command_api(command_name):
     """API-Endpunkt, um einen bestehenden Befehl zu bearbeiten."""
@@ -165,7 +170,9 @@ def edit_command_api(command_name):
     else:
         return jsonify({"error": "Command not found"}), 404
 
-# Diese Funktion sorgt dafür, dass die Tabelle "command" erstellt wird,
-# wenn die App zum ersten Mal startet.
+
 with app.app_context():
     db.create_all()
+
+if __name__ == '__main__':
+    app.run(debug=True)

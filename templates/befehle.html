@@ -17,6 +17,7 @@
             --header-color: #ffffff;     /* Weiß für Überschriften */
             --border-color: #2a3a5e;    /* Randfarbe */
             --shadow-color: rgba(155, 89, 182, 0.1);
+            --link-color: #7289da; /* Farbe für Links */
         }
 
         * {
@@ -113,6 +114,16 @@
             overflow-wrap: break-word;
             word-break: break-word;
         }
+
+        .command-card .description a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .command-card .description a:hover {
+            text-decoration: underline;
+        }
         
         .command-card .mod-only {
             display: inline-block;
@@ -149,25 +160,57 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            
             const apiUrl = '/commands';
-
             const container = document.getElementById('commands-container');
+            const sevenTvEmotes = new Map();
 
+            // Funktion, um URLs in klickbare Links umzuwandeln
+            function linkify(text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+            }
+
+            // Funktion, um Emote-Namen durch Bilder zu ersetzen
+            function replaceEmotes(text) {
+                let processedText = text;
+                sevenTvEmotes.forEach((url, name) => {
+                    // Regex, um ganzes Wort zu ersetzen und Groß-/Kleinschreibung zu ignorieren
+                    const emoteRegex = new RegExp(`\\b${name}\\b`, 'g');
+                    processedText = processedText.replace(emoteRegex, `<img src="${url}" alt="${name}" title="${name}" style="height: 1.5em; vertical-align: middle; margin: -0.25em 0;">`);
+                });
+                return processedText;
+            }
+
+            // Lade globale 7TV Emotes
+            function fetch7tvEmotes() {
+                return fetch('https://7tv.io/v3/emotes/global')
+                    .then(response => {
+                        if (!response.ok) throw new Error('7TV API nicht erreichbar');
+                        return response.json();
+                    })
+                    .then(emotes => {
+                        emotes.forEach(emote => {
+                            const name = emote.name;
+                            // Wähle eine passende Größe, z.B. 1x oder 2x
+                            const url = `https://cdn.7tv.app/emote/${emote.id}/1x.webp`;
+                            sevenTvEmotes.set(name, url);
+                        });
+                    })
+                    .catch(error => console.error('Fehler beim Laden der 7TV-Emotes:', error));
+            }
             
-            fetch(apiUrl)
+            // Lade zuerst Emotes, dann die Befehle
+            fetch7tvEmotes()
+                .then(() => fetch(apiUrl))
                 .then(response => {
-                    
                     if (!response.ok) {
                         throw new Error(`HTTP-Fehler! Status: ${response.status}. Ist der command_server.py gestartet?`);
                     }
                     return response.json(); 
                 })
                 .then(allCommands => {
-                    
                     container.innerHTML = ''; 
 
-                    
                     for (const category in allCommands) {
                         const categoryTitle = document.createElement('h2');
                         categoryTitle.className = 'category-title';
@@ -191,13 +234,18 @@
                                 modTagHTML = '<span class="mod-only">Mod</span>';
                             }
 
+                            // Verarbeite die Beschreibung
+                            let description = cmd.description || 'Keine Beschreibung.';
+                            description = linkify(description);
+                            description = replaceEmotes(description);
+
                             card.innerHTML = `
                                 <div class="name">
                                     <span class="prefix">!</span>${cmd.name}
                                     ${modTagHTML}
                                 </div>
                                 ${aliasesHTML}
-                                <div class="description">${cmd.description || 'Keine Beschreibung.'}</div>
+                                <div class="description">${description}</div>
                             `;
                             grid.appendChild(card);
                         });
@@ -206,7 +254,6 @@
                     }
                 })
                 .catch(error => {
-                    
                     console.error('Fehler beim Abrufen der Befehle:', error);
                     container.innerHTML = `<p style="text-align: center; color: #ff6b6b; font-size: 1.2rem;">Konnte die Befehle nicht laden. <br>Stelle sicher, dass das Python-Skript 'command_server.py' läuft.<br><br><small>${error.message}</small></p>`;
                 });
