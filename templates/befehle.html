@@ -164,24 +164,21 @@
             const container = document.getElementById('commands-container');
             const sevenTvEmotes = new Map();
 
-            // Funktion, um URLs in klickbare Links umzuwandeln
             function linkify(text) {
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
             }
 
-            // Funktion, um Emote-Namen durch Bilder zu ersetzen
             function replaceEmotes(text) {
                 let processedText = text;
                 sevenTvEmotes.forEach((url, name) => {
-                    // Regex, um ganzes Wort zu ersetzen und Groß-/Kleinschreibung zu ignorieren
-                    const emoteRegex = new RegExp(`\\b${name}\\b`, 'g');
+                    // KORREKTUR: 'gi' für globale (g) und case-insensitive (i) Suche hinzugefügt.
+                    const emoteRegex = new RegExp(`\\b${name}\\b`, 'gi');
                     processedText = processedText.replace(emoteRegex, `<img src="${url}" alt="${name}" title="${name}" style="height: 1.5em; vertical-align: middle; margin: -0.25em 0;">`);
                 });
                 return processedText;
             }
 
-            // Lade globale 7TV Emotes
             function fetch7tvEmotes() {
                 return fetch('https://7tv.io/v3/emotes/global')
                     .then(response => {
@@ -191,7 +188,6 @@
                     .then(emotes => {
                         emotes.forEach(emote => {
                             const name = emote.name;
-                            // Wähle eine passende Größe, z.B. 1x oder 2x
                             const url = `https://cdn.7tv.app/emote/${emote.id}/1x.webp`;
                             sevenTvEmotes.set(name, url);
                         });
@@ -199,7 +195,6 @@
                     .catch(error => console.error('Fehler beim Laden der 7TV-Emotes:', error));
             }
             
-            // Lade zuerst Emotes, dann die Befehle
             fetch7tvEmotes()
                 .then(() => fetch(apiUrl))
                 .then(response => {
@@ -234,7 +229,6 @@
                                 modTagHTML = '<span class="mod-only">Mod</span>';
                             }
 
-                            // Verarbeite die Beschreibung
                             let description = cmd.description || 'Keine Beschreibung.';
                             description = linkify(description);
                             description = replaceEmotes(description);

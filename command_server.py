@@ -6,10 +6,12 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# --- DATENBANK-KONFIGURATION (FUNKTIONIERT LOKAL & AUF DEM SERVER) ---
-# Versucht, die DATABASE_URL von der Umgebung (z.B. Render) zu bekommen.
+# --- KONFIGURATION ---
+# Wir fügen diese Zeile hinzu, um die alphabetische Sortierung zu deaktivieren.
+app.config['JSON_SORT_KEYS'] = False
+
+# Datenbank-Konfiguration mit lokalem Fallback
 database_url = os.environ.get('DATABASE_URL')
-# Wenn die Variable NICHT gefunden wird (z.B. lokal), wird eine lokale SQLite-DB genutzt.
 if not database_url:
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'commands.db')
     database_url = f'sqlite:///{db_path}'
@@ -18,9 +20,7 @@ if not database_url:
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Setzt einen Standard-API-Key für lokales Testen, falls keiner gesetzt ist.
 API_KEY = os.environ.get('COMMANDS_API_KEY', 'ein-geheimer-test-key')
-
 
 # Initialisiere die Datenbank-Verbindung
 db = SQLAlchemy(app)
@@ -31,6 +31,7 @@ class Command(db.Model):
     response = db.Column(db.String(500), nullable=False)
 
 # --- ZENTRALE DEFINITION DER FESTEN BEFEHLE ---
+# Die Reihenfolge hier wird jetzt dank der neuen Konfiguration beibehalten.
 FIXED_COMMANDS = {
     "Allgemein": [
         {"name": "hallo", "description": "Begrüßt den Benutzer freundlich."},
@@ -78,101 +79,81 @@ FIXED_COMMANDS = {
 
 @app.route('/')
 def index():
-    """Zeigt die befehle.html Seite an."""
     return render_template('befehle.html')
 
 @app.route('/commands')
 def get_commands():
-    """Kombiniert feste Befehle mit denen aus der DB und liefert sie kategorisiert zurück."""
-
     categorized_commands = {k: list(v) for k, v in FIXED_COMMANDS.items()}
-    custom_commands_from_db = Command.query.all()
+    
+    try:
+        custom_commands_from_db = Command.query.all()
+        if custom_commands_from_db:
+            if "Benutzerdefiniert" not in categorized_commands:
+                categorized_commands["Benutzerdefiniert"] = []
+            for cmd in custom_commands_from_db:
+                categorized_commands["Benutzerdefiniert"].append({
+                    "name": cmd.name.lstrip('!'),
+                    "description": cmd.response,
+                    "mod": False,
+                    "aliases": []
+                })
+    except Exception as e:
+        print(f"WARNUNG: Konnte nicht auf die Datenbank zugreifen: {e}")
 
-    if custom_commands_from_db:
-        if "Benutzerdefiniert" not in categorized_commands:
-            categorized_commands["Benutzerdefiniert"] = []
-        for cmd in custom_commands_from_db:
-            categorized_commands["Benutzerdefiniert"].append({
-                "name": cmd.name.lstrip('!'),
-                "description": cmd.response,
-                "mod": False,
-                "aliases": []
-            })
-
-    # Verschiebe Moderations-Befehle ans Ende
     if "Moderation" in categorized_commands:
         mod_commands = categorized_commands.pop("Moderation")
         categorized_commands["Moderation"] = mod_commands
 
     return jsonify(categorized_commands)
 
+# --- Der Rest der Datei bleibt gleich ---
+# (API-Routen etc.)
 @app.route('/api/commands', methods=['POST'])
 def add_command_api():
-    """API-Endpunkt, um einen Befehl in der Datenbank zu speichern."""
     if request.headers.get('Authorization') != f'Bearer {API_KEY}':
         return jsonify({"error": "Unauthorized"}), 401
-
     data = request.json
-    command_name = data.get('name')
-    command_response = data.get('response')
-
+    command_name, command_response = data.get('name'), data.get('response')
     if not command_name or not command_response:
         return jsonify({"error": "Missing name or response"}), 400
-
     if Command.query.filter_by(name=command_name).first():
         return jsonify({"error": "Command already exists"}), 409
-
-    new_command = Command(name=command_name, response=command_response)
-    db.session.add(new_command)
+    db.session.add(Command(name=command_name, response=command_response))
     db.session.commit()
-
     return jsonify({"success": True, "command": command_name}), 201
 
 @app.route('/api/commands/<path:command_name>', methods=['DELETE'])
 def delete_command_api(command_name):
-    """API-Endpunkt, um einen Befehl aus der Datenbank zu löschen."""
     if request.headers.get('Authorization') != f'Bearer {API_KEY}':
         return jsonify({"error": "Unauthorized"}), 401
-
-    if not command_name.startswith('!'):
-        command_name = '!' + command_name
-
+    if not command_name.startswith('!'): command_name = '!' + command_name
     command_to_delete = Command.query.filter_by(name=command_name).first()
-
     if command_to_delete:
         db.session.delete(command_to_delete)
         db.session.commit()
         return jsonify({"success": True, "command_deleted": command_name}), 200
-    else:
-        return jsonify({"error": "Command not found"}), 404
-
+    return jsonify({"error": "Command not found"}), 404
+    
 @app.route('/api/commands/<path:command_name>', methods=['PUT'])
 def edit_command_api(command_name):
-    """API-Endpunkt, um einen bestehenden Befehl zu bearbeiten."""
     if request.headers.get('Authorization') != f'Bearer {API_KEY}':
         return jsonify({"error": "Unauthorized"}), 401
-
-    if not command_name.startswith('!'):
-        command_name = '!' + command_name
-
+    if not command_name.startswith('!'): command_name = '!' + command_name
     command_to_edit = Command.query.filter_by(name=command_name).first()
-
     if command_to_edit:
         data = request.json
         new_response = data.get('response')
-
-        if not new_response:
-            return jsonify({"error": "Missing new response"}), 400
-
+        if not new_response: return jsonify({"error": "Missing new response"}), 400
         command_to_edit.response = new_response
         db.session.commit()
         return jsonify({"success": True, "command_edited": command_name}), 200
-    else:
-        return jsonify({"error": "Command not found"}), 404
-
+    return jsonify({"error": "Command not found"}), 404
 
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"WARNUNG: Konnte Datenbanktabellen nicht erstellen (ignoriere für lokale Tests): {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)
